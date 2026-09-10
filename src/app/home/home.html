@@ -1,34 +1,21 @@
-<div class="scene">
-  <div class="orb orb-a"></div>
-  <div class="orb orb-b"></div>
-  <div class="grain"></div>
+<mat-toolbar>
+  <mat-icon aria-hidden="true">lock_open</mat-icon>
+  <span class="brand">Unlock PDF</span>
+  <span class="spacer"></span>
+  <span class="toolbar-meta">local · en el navegador</span>
+</mat-toolbar>
 
-  <header class="hero" animate.enter="enter-hero">
-    <div class="brand">
-      <span class="brand-mark" [class.busy]="checking() || unlocking()" [class.open]="stage() === 'ready'">
-        <svg viewBox="0 0 48 48" aria-hidden="true">
-          <g class="shackle">
-            <path d="M16 22V16a8 8 0 0 1 16 0v6" />
-          </g>
-          <rect class="body" x="12" y="22" width="24" height="18" rx="4" />
-          <circle class="keyhole" cx="24" cy="31" r="2.2" />
-        </svg>
-      </span>
-      <div>
-        <p class="eyebrow">local · en el navegador</p>
-        <h1>Unlock PDF</h1>
-      </div>
-    </div>
-    <p class="lede">
-      Suelta un PDF bloqueado, escribe la contraseña y te lo devuelvo sin protección.
-      El archivo no sale de este ordenador.
-    </p>
-  </header>
+<main class="page">
+  <p class="lede">
+    Suelta un PDF bloqueado, escribe la contraseña y te lo devuelvo sin protección. El archivo no
+    sale de este ordenador.
+  </p>
 
-  <section class="stage" aria-live="polite">
+  <section aria-live="polite">
     @if (stage() === 'drop') {
-      <div
-        class="panel drop"
+      <mat-card
+        appearance="outlined"
+        class="drop"
         [class.hot]="dragOver()"
         [class.busy]="checking()"
         animate.enter="enter-panel"
@@ -38,6 +25,9 @@
         (dragleave)="onDragLeave($event)"
         (drop)="onDrop($event)"
       >
+        @if (checking()) {
+          <mat-progress-bar mode="indeterminate" />
+        }
         <input
           #fileInput
           class="sr-only"
@@ -45,108 +35,130 @@
           accept="application/pdf,.pdf"
           (change)="onFilePicked($event)"
         />
-
-        <div class="drop-ring">
-          <div class="drop-core">
-            <div class="sheet">
-              <span class="sheet-line"></span>
-              <span class="sheet-line"></span>
-              <span class="sheet-line short"></span>
-            </div>
-            <p class="drop-title">{{ checking() ? 'Revisando el PDF…' : 'Arrastra el PDF aquí' }}</p>
-            <p class="drop-copy">
-              {{ checking() ? 'Validando formato y contraseña' : 'o elige el archivo desde el disco' }}
-            </p>
-            <button class="btn primary" type="button" [disabled]="checking()" (click)="openPicker()">
-              <span>{{ checking() ? 'Un segundo' : 'Seleccionar PDF' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
+        <mat-card-content class="drop-body">
+          <mat-icon class="drop-icon" aria-hidden="true">picture_as_pdf</mat-icon>
+          <mat-card-title>
+            {{ checking() ? 'Revisando el PDF…' : 'Arrastra el PDF aquí' }}
+          </mat-card-title>
+          <mat-card-subtitle>
+            {{ checking() ? 'Validando formato y contraseña' : 'o elige el archivo desde el disco' }}
+          </mat-card-subtitle>
+          <button
+            matButton="filled"
+            type="button"
+            [disabled]="checking()"
+            (click)="openPicker()"
+          >
+            <mat-icon>folder_open</mat-icon>
+            {{ checking() ? 'Un segundo' : 'Seleccionar PDF' }}
+          </button>
+        </mat-card-content>
+      </mat-card>
     }
 
     @if (stage() === 'password') {
-      <form
-        class="panel password"
+      <mat-card
+        appearance="outlined"
+        class="panel"
         [class.shake]="shakePassword()"
-        [class.busy]="unlocking()"
         animate.enter="enter-panel"
         animate.leave="leave-panel"
-        (submit)="$event.preventDefault(); unlock()"
       >
-        <div class="file-chip">
-          <span class="file-icon">PDF</span>
-          <span>
-            <strong>{{ fileName() }}</strong>
-            <small>{{ fileSize() }} · protegido</small>
-          </span>
-        </div>
+        @if (unlocking()) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+        <form (submit)="$event.preventDefault(); unlock()">
+          <mat-card-content class="password-body">
+            <mat-chip-set>
+              <mat-chip>
+                <mat-icon matChipAvatar>lock</mat-icon>
+                {{ fileName() }} · {{ fileSize() }}
+              </mat-chip>
+            </mat-chip-set>
 
-        <label class="field">
-          <span>Contraseña</span>
-          <div class="field-row">
-            <input
-              #passwordField
-              [attr.type]="showPassword() ? 'text' : 'password'"
-              [value]="password()"
-              autocomplete="off"
-              spellcheck="false"
-              placeholder="La que pide al abrir el PDF"
-              [disabled]="unlocking()"
-              (input)="onPasswordInput($event)"
-            />
-            <button class="ghost" type="button" (click)="togglePasswordVisibility()">
-              {{ showPassword() ? 'Ocultar' : 'Ver' }}
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Contraseña</mat-label>
+              <input
+                #passwordField
+                matInput
+                [type]="showPassword() ? 'text' : 'password'"
+                [value]="password()"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="La que pide al abrir el PDF"
+                [disabled]="unlocking()"
+                (input)="onPasswordInput($event)"
+              />
+              <button
+                matIconButton
+                matSuffix
+                type="button"
+                [matTooltip]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
+                (click)="togglePasswordVisibility()"
+              >
+                <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              @if (passwordError()) {
+                <mat-error>{{ passwordError() }}</mat-error>
+              } @else {
+                <mat-hint>Se usa solo para descifrar el archivo en tu navegador.</mat-hint>
+              }
+            </mat-form-field>
+          </mat-card-content>
+
+          <mat-divider />
+
+          <mat-card-actions align="end">
+            <button matButton type="button" [disabled]="unlocking()" (click)="reset()">
+              Otro archivo
             </button>
-          </div>
-        </label>
-
-        <div class="actions">
-          <button class="btn ghost" type="button" [disabled]="unlocking()" (click)="reset()">
-            Otro archivo
-          </button>
-          <button class="btn primary" type="submit" [disabled]="unlocking()">
-            <span>{{ unlocking() ? 'Abriendo el candado…' : 'Quitar contraseña' }}</span>
-          </button>
-        </div>
-      </form>
+            <button matButton="filled" type="submit" [disabled]="unlocking()">
+              <mat-icon>lock_open</mat-icon>
+              {{ unlocking() ? 'Abriendo el candado…' : 'Quitar contraseña' }}
+            </button>
+          </mat-card-actions>
+        </form>
+      </mat-card>
     }
 
     @if (stage() === 'ready') {
-      <div class="panel ready" animate.enter="enter-preview" animate.leave="leave-panel">
-        <div class="preview-wrap" [class.shown]="previewReady()">
-          <div class="paper">
+      <mat-card appearance="outlined" class="panel" animate.enter="enter-preview" animate.leave="leave-panel">
+        <mat-card-content class="ready-body">
+          <div class="preview-frame">
             <canvas #previewCanvas></canvas>
             @if (!previewReady()) {
-              <div class="preview-wait">Preparando preview…</div>
+              <div class="preview-wait">
+                <mat-progress-spinner diameter="40" mode="indeterminate" />
+                <span>Preparando preview…</span>
+              </div>
             }
           </div>
-          <div class="preview-meta">
-            <p class="badge">unlocked</p>
+
+          <div class="ready-meta">
+            <mat-chip-set>
+              <mat-chip highlighted>
+                <mat-icon matChipAvatar>verified</mat-icon>
+                unlocked
+              </mat-chip>
+            </mat-chip-set>
             <h2>{{ unlockedName() }}</h2>
             <p>
               {{ unlockedSize() }}
               @if (pageCount() > 0) {
-                <span>· {{ pageCount() }} {{ pageCount() === 1 ? 'página' : 'páginas' }}</span>
+                · {{ pageCount() }} {{ pageCount() === 1 ? 'página' : 'páginas' }}
               }
             </p>
             <p class="hint">Este es el archivo libre: ya no pide contraseña al abrirlo.</p>
-            <div class="actions">
-              <button class="btn ghost" type="button" (click)="reset()">Otro PDF</button>
-              <button class="btn primary" type="button" (click)="download()">
-                <span>Descargar</span>
+            <div class="ready-actions">
+              <button matButton type="button" (click)="reset()">Otro PDF</button>
+              <button matFab extended type="button" (click)="download()">
+                <mat-icon>download</mat-icon>
+                Descargar
               </button>
             </div>
           </div>
-        </div>
-      </div>
+        </mat-card-content>
+      </mat-card>
     }
   </section>
-
-  @if (notice(); as item) {
-    <aside class="notice notice-{{ item.kind }}" animate.enter="enter-notice" animate.leave="leave-notice">
-      <strong>{{ item.title }}</strong>
-      <span>{{ item.body }}</span>
-    </aside>
-  }
-</div>
+</main>

@@ -1,59 +1,73 @@
-# UnlockPdf
+# Unlock PDF
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.7.
+App local para quitar la contraseña de un PDF. Todo ocurre en el navegador: el archivo y la clave no se envían a ningún servidor.
 
-## Development server
+1. Suelta o elige un PDF.
+2. La app comprueba que sea un PDF y que esté bloqueado.
+3. Pides la contraseña, ves un preview del documento libre y lo descargas.
 
-To start a local development server, run:
+Hecha con Angular 22. No hay API, base de datos ni backend.
 
-```bash
-ng serve
-```
+## Requisitos
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Node.js 22 o superior
+- npm
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Uso local
 
 ```bash
-ng generate --help
+npm install
+npm start
 ```
 
-## Building
+Abre [http://localhost:4200](http://localhost:4200).
 
-To build the project run:
+## Build
 
 ```bash
-ng build
+npm run build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+El sitio estático queda en `dist/unlock-pdf/browser`. Esa carpeta es lo que hay que publicar.
 
-## Running unit tests
+## Ramas
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+| Rama | UI |
+| --- | --- |
+| `dorado` | Diseño propio (tema café/dorado) |
+| `angular-material` | Angular Material 3 |
+
+## Publicar
+
+Es una SPA estática. El host solo sirve HTML/JS/CSS; los PDFs siguen procesándose en el cliente.
+
+La opción más simple es **GitHub Pages**. **Azure Blob Storage** también vale, pero si vas a Azure conviene más **Static Web Apps**.
+
+### GitHub Pages
+
+Si el sitio vive en `https://USUARIO.github.io/unlock-pdf/`:
 
 ```bash
-ng test
+npx ng build --base-href=/unlock-pdf/
+cp dist/unlock-pdf/browser/index.html dist/unlock-pdf/browser/404.html
 ```
 
-## Running end-to-end tests
+Publica el contenido de `dist/unlock-pdf/browser`. El `404.html` evita que una recarga deje la app en blanco.
 
-For end-to-end (e2e) testing, run:
+En un sitio de usuario (`https://USUARIO.github.io/`) usa `--base-href=/` y no hace falta el prefijo del repo.
 
-```bash
-ng e2e
-```
+### Azure Static Web Apps
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Mejor que Blob para un Angular: HTTPS y fallback de SPA incluidos.
 
-## Additional Resources
+- App location: `/`
+- Output location: `dist/unlock-pdf/browser`
+- API location: vacío
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### Azure Blob Storage
+
+1. Activa *Static website* en la cuenta de storage.
+2. Sube `dist/unlock-pdf/browser` al contenedor `$web`.
+3. Pon `index.html` como documento de índice y de error.
+
+Sirve, pero el HTTPS y el enrutado SPA quedan más toscos que en Pages o Static Web Apps.

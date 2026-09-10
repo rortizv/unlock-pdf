@@ -8,6 +8,24 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { MatButton, MatFabButton, MatIconButton } from '@angular/material/button';
+import {
+  MatCard,
+  MatCardActions,
+  MatCardContent,
+  MatCardSubtitle,
+  MatCardTitle,
+} from '@angular/material/card';
+import { MatChip, MatChipAvatar, MatChipSet } from '@angular/material/chips';
+import { MatDivider } from '@angular/material/divider';
+import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatProgressBar } from '@angular/material/progress-bar';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatToolbar } from '@angular/material/toolbar';
+import { MatTooltip } from '@angular/material/tooltip';
 import {
   formatBytes,
   isEncryptedPdf,
@@ -29,7 +47,31 @@ interface Notice {
 }
 
 @Component({
-  imports: [],
+  imports: [
+    MatButton,
+    MatCard,
+    MatCardActions,
+    MatCardContent,
+    MatCardSubtitle,
+    MatCardTitle,
+    MatChip,
+    MatChipAvatar,
+    MatChipSet,
+    MatDivider,
+    MatError,
+    MatFabButton,
+    MatFormField,
+    MatHint,
+    MatIcon,
+    MatIconButton,
+    MatInput,
+    MatLabel,
+    MatProgressBar,
+    MatProgressSpinner,
+    MatSuffix,
+    MatToolbar,
+    MatTooltip,
+  ],
   selector: 'app-home',
   styleUrl: './home.css',
   templateUrl: './home.html',
@@ -37,6 +79,7 @@ interface Notice {
 export class Home {
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
+  private readonly snackBar = inject(MatSnackBar);
 
   private readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
   private readonly passwordField = viewChild<ElementRef<HTMLInputElement>>('passwordField');
@@ -49,7 +92,7 @@ export class Home {
   protected readonly shakePassword = signal(false);
   protected readonly showPassword = signal(false);
   protected readonly previewReady = signal(false);
-  protected readonly notice = signal<Notice | null>(null);
+  protected readonly passwordError = signal('');
 
   protected readonly fileName = signal('');
   protected readonly fileSize = signal('');
@@ -61,15 +104,9 @@ export class Home {
 
   private sourceBytes: Uint8Array | null = null;
   private dragDepth = 0;
-  private noticeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    this.destroyRef.onDestroy(() => {
-      this.revokeUnlockedUrl();
-      if (this.noticeTimer) {
-        clearTimeout(this.noticeTimer);
-      }
-    });
+    this.destroyRef.onDestroy(() => this.revokeUnlockedUrl());
   }
 
   protected openPicker(): void {
@@ -119,6 +156,7 @@ export class Home {
   protected onPasswordInput(event: Event): void {
     this.password.set((event.target as HTMLInputElement).value);
     this.shakePassword.set(false);
+    this.passwordError.set('');
   }
 
   protected togglePasswordVisibility(): void {
@@ -132,6 +170,7 @@ export class Home {
     this.shakePassword.set(false);
     this.showPassword.set(false);
     this.previewReady.set(false);
+    this.passwordError.set('');
     this.password.set('');
     this.fileName.set('');
     this.fileSize.set('');
@@ -142,8 +181,6 @@ export class Home {
     this.revokeUnlockedUrl();
     if (message) {
       this.flash(message);
-    } else {
-      this.notice.set(null);
     }
   }
 
@@ -159,8 +196,8 @@ export class Home {
       return;
     }
     if (!secret) {
-      this.shakePassword.set(false);
-      requestAnimationFrame(() => this.shakePassword.set(true));
+      this.passwordError.set('Escribe la contraseña para poder quitar el bloqueo.');
+      this.nudgePassword();
       this.flash({
         kind: 'warn',
         title: 'Falta la contraseña',
@@ -198,9 +235,9 @@ export class Home {
       );
     } catch (error) {
       this.unlocking.set(false);
-      this.shakePassword.set(false);
-      requestAnimationFrame(() => this.shakePassword.set(true));
       if (isWrongPassword(error)) {
+        this.passwordError.set('Esa clave no abre este PDF. Prueba otra.');
+        this.nudgePassword();
         this.flash({
           kind: 'error',
           title: 'Contraseña incorrecta',
@@ -233,6 +270,7 @@ export class Home {
     this.stage.set('drop');
     this.previewReady.set(false);
     this.password.set('');
+    this.passwordError.set('');
     this.flash({
       kind: 'info',
       title: 'Revisando archivo',
@@ -317,16 +355,17 @@ export class Home {
   }
 
   private flash(notice: Notice): void {
-    this.notice.set(null);
-    requestAnimationFrame(() => this.notice.set(notice));
-    if (this.noticeTimer) {
-      clearTimeout(this.noticeTimer);
-    }
-    this.noticeTimer = setTimeout(() => {
-      if (this.notice() === notice) {
-        this.notice.set(null);
-      }
-    }, 5200);
+    this.snackBar.open(`${notice.title}. ${notice.body}`, 'Cerrar', {
+      duration: 5000,
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom',
+      politeness: notice.kind === 'error' ? 'assertive' : 'polite',
+    });
+  }
+
+  private nudgePassword(): void {
+    this.shakePassword.set(false);
+    requestAnimationFrame(() => this.shakePassword.set(true));
   }
 
   private replaceUnlockedUrl(bytes: Uint8Array): void {
