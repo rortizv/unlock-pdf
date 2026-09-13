@@ -32,7 +32,7 @@ mat-toolbar {
 
 .lede {
   margin: 0 0 1.5rem;
-  max-width: 40rem;
+  max-width: 100%;
   color: var(--mat-sys-on-surface-variant);
 }
 
@@ -155,19 +155,23 @@ mat-toolbar {
 }
 
 @keyframes shake {
+
   10%,
   90% {
     transform: translateX(-2px);
   }
+
   20%,
   80% {
     transform: translateX(6px);
   }
+
   30%,
   50%,
   70% {
     transform: translateX(-8px);
   }
+
   40%,
   60% {
     transform: translateX(8px);
